@@ -1,5 +1,10 @@
 {
   "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "strict": true,         // add if you want strict mode
+    "noEmit": true,         // don’t generate JS output
+    "skipLibCheck": true    // faster builds, ignore lib errors
+  },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["**/node_modules", "**/Pods"]
+  "exclude": ["node_modules", "android", "ios", "Pods"]
 }

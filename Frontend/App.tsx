@@ -5,7 +5,7 @@ export default function App() {
   const [msg, setMsg] = useState<string>('Loading...');
 
   useEffect(() => {
-    fetch('http://192.168.1.104:5000/message')  // <-- replace with your PC IP
+    fetch('http://192.168.245.31:5000/message')  // <-- replace with your PC IP
       .then(r => r.json())
       .then(j => setMsg(j.message))
       .catch(e => setMsg('Error: ' + e.message));
