@@ -6,31 +6,58 @@ import {
   ScrollView,
   View,
   ActivityIndicator,
+  Switch,
 } from "react-native";
 
 export default function App() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 🔹 Fetch data from backend
+  const fetchData = () => {
+    fetch("http://192.168.160.226:5000/oper_table", {
+      headers: { "Cache-Control": "no-cache" },
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        setData(json);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setLoading(false);
+      });
+  };
+
+  // 🔹 Run once + keep polling
   useEffect(() => {
-    const fetchData = () => {
-      fetch("http://192.168.43.226:5000/oper_table")
-        .then((res) => res.json())
-        .then((json) => {
-          setData(json);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Fetch error:", err);
-          setLoading(false);
-        });
-    };
-
     fetchData(); // initial load
-    const interval = setInterval(fetchData, 5000); // poll every 5s
-
-    return () => clearInterval(interval); // cleanup when unmounting
+    const interval = setInterval(fetchData, 2000); // refresh every 2s
+    return () => clearInterval(interval);
   }, []);
+
+  // 🔹 Toggle status switch
+  const toggleStatus = (sr_no: number, newValue: boolean) => {
+    const newStatus = newValue ? "Kept in Rack" : "";
+
+    fetch(`http://192.168.160.226:5000/oper_table/${sr_no}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status_val: newStatus }),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        // update immediately
+        setData((prev) =>
+          prev.map((item) =>
+            item.sr_no === sr_no ? { ...item, status_val: newStatus } : item
+          )
+        );
+        // refresh from server
+        fetchData();
+      })
+      .catch((err) => console.error("Update error:", err));
+  };
 
   if (loading) {
     return (
@@ -61,7 +88,7 @@ export default function App() {
           <ScrollView style={{ maxHeight: 500 }}>
             {data.map((item, index) => (
               <View
-                key={index}
+                key={item.sr_no}
                 style={[styles.row, index % 2 === 0 ? styles.even : styles.odd]}
               >
                 <Text style={styles.cell}>{item.tray_no}</Text>
@@ -72,7 +99,12 @@ export default function App() {
                 <Text style={styles.cell}>{item.part_desp}</Text>
                 <Text style={styles.cell}>{item.oper}</Text>
                 <Text style={styles.cell}>{item.qty_val}</Text>
-                <Text style={styles.cell}>{item.status_val}</Text>
+
+                {/* Switch for status */}
+                <Switch
+                  value={item.status_val === "Kept in Rack"}
+                  onValueChange={(val) => toggleStatus(item.sr_no, val)}
+                />
               </View>
             ))}
           </ScrollView>
@@ -89,21 +121,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderColor: "#ddd",
+    alignItems: "center",
   },
-  header: {
-    backgroundColor: "#333",
-  },
-  headerText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  cell: {
-    flex: 1,
-    minWidth: 100,
-    padding: 8,
-    fontSize: 14,
-    color: "#000",
-  },
+  header: { backgroundColor: "#333" },
+  headerText: { color: "#fff", fontWeight: "bold" },
+  cell: { flex: 1, minWidth: 100, padding: 8, fontSize: 14, color: "#000" },
   even: { backgroundColor: "#f9f9f9" },
   odd: { backgroundColor: "#fff" },
 });
