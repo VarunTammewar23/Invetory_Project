@@ -13,30 +13,35 @@ export default function App() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Fetch data from backend
-  const fetchData = () => {
-    fetch("http://192.168.160.226:5000/oper_table", {
-      headers: { "Cache-Control": "no-cache" },
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        setData(json);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Fetch error:", err);
-        setLoading(false);
-      });
-  };
-
-  // 🔹 Run once + keep polling
+  // Fetch table data with polling
   useEffect(() => {
+    const fetchData = () => {
+      fetch("http://192.168.160.226:5000/oper_table", {
+        method: "GET",
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      })
+        .then((res) => res.json())
+        .then((json) => {
+          console.log("Fetched rows:", json.length); // 🛠 Debug
+          setData(json); // always replace with fresh data
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Fetch error:", err);
+          setLoading(false);
+        });
+    };
+
     fetchData(); // initial load
-    const interval = setInterval(fetchData, 2000); // refresh every 2s
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchData, 2000); // poll every 2s
+    return () => clearInterval(interval); // cleanup
   }, []);
 
-  // 🔹 Toggle status switch
+  // Function to toggle status
   const toggleStatus = (sr_no: number, newValue: boolean) => {
     const newStatus = newValue ? "Kept in Rack" : "";
 
@@ -47,14 +52,12 @@ export default function App() {
     })
       .then((res) => res.json())
       .then(() => {
-        // update immediately
+        // update local state so switch moves instantly
         setData((prev) =>
           prev.map((item) =>
             item.sr_no === sr_no ? { ...item, status_val: newStatus } : item
           )
         );
-        // refresh from server
-        fetchData();
       })
       .catch((err) => console.error("Update error:", err));
   };
@@ -100,7 +103,7 @@ export default function App() {
                 <Text style={styles.cell}>{item.oper}</Text>
                 <Text style={styles.cell}>{item.qty_val}</Text>
 
-                {/* Switch for status */}
+                {/* Status column with Switch */}
                 <Switch
                   value={item.status_val === "Kept in Rack"}
                   onValueChange={(val) => toggleStatus(item.sr_no, val)}
