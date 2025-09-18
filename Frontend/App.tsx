@@ -1,24 +1,23 @@
-import React, {useEffect, useState} from 'react';
-import {SafeAreaView, Text, StyleSheet} from 'react-native';
+// App.tsx
+import "react-native-gesture-handler";
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
 
-export default function App() {
-  const [msg, setMsg] = useState<string>('Loading...');
+import LoginScreen from "./screens/LoginScreen";
+import RackScreen from "./screens/RackScreen";
 
-  useEffect(() => {
-    fetch('http://192.168.245.31:5000/message')  // <-- replace with your PC IP
-      .then(r => r.json())
-      .then(j => setMsg(j.message))
-      .catch(e => setMsg('Error: ' + e.message));
-  }, []);
+const Stack = createStackNavigator();
 
+const App = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.text}>{msg}</Text>
-    </SafeAreaView>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="RackScreen" component={RackScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff'},
-  text: {fontSize: 20},
-});
+export default App;
