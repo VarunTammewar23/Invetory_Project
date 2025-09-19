@@ -16,7 +16,7 @@ export default function App() {
   // Fetch table data with polling
   useEffect(() => {
     const fetchData = () => {
-      fetch("http://192.168.160.226:5000/oper_table", {
+      fetch("http://192.168.1.103:5000/oper_table", {
         method: "GET",
         headers: {
           "Cache-Control": "no-cache",
@@ -45,7 +45,7 @@ export default function App() {
   const toggleStatus = (sr_no: number, newValue: boolean) => {
     const newStatus = newValue ? "Kept in Rack" : "";
 
-    fetch(`http://192.168.160.226:5000/oper_table/${sr_no}/status`, {
+    fetch(`http://192.168.1.103:5000/oper_table/${sr_no}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status_val: newStatus }),
