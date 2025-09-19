@@ -1,8 +1,0 @@
-// App.tsx
-import React from "react";
-//import HomeScreen from "./screens/homescreen";
-import HomeScreen from "./src/screens/HomeScreen";
-
-export default function App() {
-  return <HomeScreen />;
-}
