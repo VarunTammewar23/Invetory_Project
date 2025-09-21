@@ -9,10 +9,12 @@ import {
   ActivityIndicator,
   Switch,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 
 export default function HomeScreen() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedColumn, setSelectedColumn] = useState<number | null>(null);
 
   // Fetch table data with polling
   useEffect(() => {
@@ -69,10 +71,70 @@ export default function HomeScreen() {
     );
   }
 
+  // Unique columns for dropdown
+  const uniqueColumns = Array.from(new Set(data.map((item) => item.col_no)));
+
+  // Filter based on selected column
+  const filteredData = selectedColumn
+    ? data.filter((item) => item.col_no === selectedColumn)
+    : data;
+
+  // Sort by row, then tray
+  const sortedData = [...filteredData].sort((a, b) => {
+    if (a.row_no !== b.row_no) return a.row_no - b.row_no;
+    return a.tray_no - b.tray_no;
+  });
+
+  // Mock QR scan function
+  const mockQRScan = () => {
+    if (uniqueColumns.length > 0) {
+      const randomCol =
+        uniqueColumns[Math.floor(Math.random() * uniqueColumns.length)];
+      setSelectedColumn(randomCol);
+      console.log("Mock QR scanned column:", randomCol);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Column Selector */}
+      <View style={styles.selector}>
+        <View style={{ marginVertical: 10, paddingHorizontal: 16 }}>
+          <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 5 }}>
+            Select Column:
+          </Text>
+
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: "#ccc",
+              borderRadius: 8,
+              backgroundColor: "white",
+              width: "60%",
+            }}
+          >
+            <Picker
+              selectedValue={selectedColumn}
+              onValueChange={(itemValue) => setSelectedColumn(itemValue)}
+              style={{
+                height: 50,
+                width: "100%",
+                color: "black",
+              }}
+            >
+              <Picker.Item label="All Columns" value={null} />
+              {uniqueColumns.map((col) => (
+                <Picker.Item key={col} label={`Column ${col}`} value={col} />
+              ))}
+            </Picker>
+          </View>
+        </View>
+      </View>
+
+      {/* Data Table */}
       <ScrollView horizontal>
         <View>
+          {/* Header Row */}
           <View style={[styles.row, styles.header]}>
             <Text style={[styles.cell, styles.headerText]}>Tray</Text>
             <Text style={[styles.cell, styles.headerText]}>Row</Text>
@@ -85,8 +147,9 @@ export default function HomeScreen() {
             <Text style={[styles.cell, styles.headerText]}>Status</Text>
           </View>
 
+          {/* Data Rows */}
           <ScrollView style={{ maxHeight: 500 }}>
-            {data.map((item, index) => (
+            {sortedData.map((item, index) => (
               <View
                 key={item.sr_no}
                 style={[styles.row, index % 2 === 0 ? styles.even : styles.odd]}
@@ -116,6 +179,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 10 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  selector: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
   row: {
     flexDirection: "row",
     borderBottomWidth: 1,
