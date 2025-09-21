@@ -24,31 +24,32 @@ export default function HomeScreen() {
 
   // Fetch table data with polling
   useEffect(() => {
-    const fetchData = () => {
-      fetch("http://192.168.116.31:5000/oper_table", {
-        method: "GET",
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
+  const fetchData = () => {
+    fetch(`http://192.168.116.31:5000/stock_data/${rackId}`, {
+      method: "GET",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        console.log("Fetched rows:", json.length);
+        setData(json);
+        setLoading(false);
       })
-        .then((res) => res.json())
-        .then((json) => {
-          console.log("Fetched rows:", json.length);
-          setData(json);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Fetch error:", err);
-          setLoading(false);
-        });
-    };
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setLoading(false);
+      });
+  };
 
-    fetchData();
-    const interval = setInterval(fetchData, 2000);
-    return () => clearInterval(interval);
-  }, []);
+  fetchData();
+  const interval = setInterval(fetchData, 2000); // optional polling
+  return () => clearInterval(interval);
+}, [rackId]);
+
 
   const toggleStatus = (sr_no: number, newValue: boolean) => {
     const newStatus = newValue ? "Kept in Rack" : "";
