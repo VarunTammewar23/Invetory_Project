@@ -1,4 +1,5 @@
 // Frontend/screens/HomeScreen.tsx
+import { Camera, useCameraDevices } from "react-native-vision-camera";
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -8,13 +9,25 @@ import {
   View,
   ActivityIndicator,
   Switch,
+  Button,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import { BarCodeScanner } from "expo-barcode-scanner";
 
 export default function HomeScreen() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedColumn, setSelectedColumn] = useState<number | null>(null);
+  const [scannerActive, setScannerActive] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+
+  // Ask camera permission once
+  useEffect(() => {
+    (async () => {
+      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      setHasPermission(status === "granted");
+    })();
+  }, []);
 
   // Fetch table data with polling
   useEffect(() => {
@@ -29,7 +42,6 @@ export default function HomeScreen() {
       })
         .then((res) => res.json())
         .then((json) => {
-          console.log("Fetched rows:", json.length);
           setData(json);
           setLoading(false);
         })
@@ -85,32 +97,61 @@ export default function HomeScreen() {
     return a.tray_no - b.tray_no;
   });
 
-  // Mock QR scan function
-  const mockQRScan = () => {
-    if (uniqueColumns.length > 0) {
-      const randomCol =
-        uniqueColumns[Math.floor(Math.random() * uniqueColumns.length)];
-      setSelectedColumn(randomCol);
-      console.log("Mock QR scanned column:", randomCol);
+  // Handle QR Scan result
+  const handleBarCodeScanned = ({ data }: { data: string }) => {
+    setScannerActive(false);
+    const colNo = parseInt(data, 10);
+    if (!isNaN(colNo)) {
+      setSelectedColumn(colNo);
+      console.log("Scanned Column:", colNo);
+    } else {
+      console.warn("Invalid QR Code, expected column number but got:", data);
     }
   };
 
+  // If scanner is active → show scanner
+  if (scannerActive) {
+    if (hasPermission === null) {
+      return (
+        <SafeAreaView style={styles.center}>
+          <Text>Requesting camera permission...</Text>
+        </SafeAreaView>
+      );
+    }
+    if (hasPermission === false) {
+      return (
+        <SafeAreaView style={styles.center}>
+          <Text>No access to camera</Text>
+        </SafeAreaView>
+      );
+    }
+
+    return (
+      <SafeAreaView style={{ flex: 1 }}>
+        <BarCodeScanner
+          onBarCodeScanned={handleBarCodeScanned}
+          style={{ flex: 1 }}
+        />
+        <Button title="Cancel" onPress={() => setScannerActive(false)} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Column Selector */}
+      {/* Column Selector + QR Button */}
       <View style={styles.selector}>
-        <View style={{ marginVertical: 10, paddingHorizontal: 16 }}>
+        <View style={{ flex: 1, marginRight: 10 }}>
           <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 5 }}>
             Select Column:
           </Text>
-
           <View
             style={{
               borderWidth: 1,
               borderColor: "#ccc",
               borderRadius: 8,
               backgroundColor: "white",
-              width: "60%",
+              width: "100%",
             }}
           >
             <Picker
@@ -129,6 +170,9 @@ export default function HomeScreen() {
             </Picker>
           </View>
         </View>
+
+        {/* QR Scanner Button */}
+        <Button title="Scan QR" onPress={() => setScannerActive(true)} />
       </View>
 
       {/* Data Table */}
