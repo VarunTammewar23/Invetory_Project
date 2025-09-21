@@ -1,7 +1,9 @@
 // Frontend/screens/HomeScreen.tsx
 import React, { useEffect, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import {
-  SafeAreaView,
+  
   Text,
   StyleSheet,
   ScrollView,
@@ -9,8 +11,14 @@ import {
   ActivityIndicator,
   Switch,
 } from "react-native";
+import { useRoute } from "@react-navigation/native";
 
 export default function HomeScreen() {
+
+  const route = useRoute();
+  const { rackId } = route.params as { rackId: string };
+  console.log("Rack ID:", rackId);
+  
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,7 +93,7 @@ export default function HomeScreen() {
             <Text style={[styles.cell, styles.headerText]}>Status</Text>
           </View>
 
-          <ScrollView style={{ maxHeight: 500 }}>
+          <ScrollView style={styles.dataScroll}>
             {data.map((item, index) => (
               <View
                 key={item.sr_no}
@@ -127,4 +135,5 @@ const styles = StyleSheet.create({
   cell: { flex: 1, minWidth: 100, padding: 8, fontSize: 14, color: "#000" },
   even: { backgroundColor: "#f9f9f9" },
   odd: { backgroundColor: "#fff" },
+  dataScroll: { maxHeight: 500 }, // moved from inline style
 });
