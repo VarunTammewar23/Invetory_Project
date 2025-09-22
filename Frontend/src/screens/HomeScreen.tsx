@@ -1,4 +1,4 @@
-// Frontend/screens/HomeScreen.tsx
+// HomeScreen.tsx
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -8,16 +8,49 @@ import {
   View,
   ActivityIndicator,
   Switch,
+  Platform,
+  PermissionsAndroid,
+  Alert,
+  Button
 } from "react-native";
+
+// QR scanner imports
+import QRCodeScanner from 'react-native-qrcode-scanner';
+import { RNCamera } from 'react-native-camera';
+
+// ---------------------------
+// Camera permission function
+// ---------------------------
+const requestCameraPermission = async () => {
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: 'Camera Permission',
+          message: 'App needs access to your camera to scan QR codes',
+          buttonPositive: 'OK',
+          buttonNegative: 'Cancel',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  }
+  return true; // iOS permissions are handled automatically
+};
 
 export default function HomeScreen() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scannerActive, setScannerActive] = useState(false);
 
   // Fetch table data with polling
   useEffect(() => {
     const fetchData = () => {
-      fetch("http://192.168.1.103:5000/oper_table", {
+      fetch("http://192.168.216.31:5000/oper_table", {
         method: "GET",
         headers: {
           "Cache-Control": "no-cache",
@@ -27,7 +60,6 @@ export default function HomeScreen() {
       })
         .then((res) => res.json())
         .then((json) => {
-          console.log("Fetched rows:", json.length);
           setData(json);
           setLoading(false);
         })
@@ -45,7 +77,7 @@ export default function HomeScreen() {
   const toggleStatus = (sr_no: number, newValue: boolean) => {
     const newStatus = newValue ? "Kept in Rack" : "";
 
-    fetch(`http://192.168.1.103:5000/oper_table/${sr_no}/status`, {
+    fetch(`http://192.168.216.31:5000/oper_table/${sr_no}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status_val: newStatus }),
@@ -61,6 +93,19 @@ export default function HomeScreen() {
       .catch((err) => console.error("Update error:", err));
   };
 
+  // Handle QR code scan
+  const handleQRCodeRead = ({ data }: { data: string }) => {
+    Alert.alert("QR Code Data", data);
+    setScannerActive(false); // close scanner after reading
+  };
+
+  // Request permission on scanner open
+  const openScanner = async () => {
+    const hasPermission = await requestCameraPermission();
+    if (hasPermission) setScannerActive(true);
+    else Alert.alert("Camera permission denied");
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.center}>
@@ -69,8 +114,21 @@ export default function HomeScreen() {
     );
   }
 
+  // Show QR scanner if active
+  if (scannerActive) {
+    return (
+      <QRCodeScanner
+        onRead={handleQRCodeRead}
+        flashMode={RNCamera.Constants.FlashMode.torch}
+        topContent={<Text style={{ padding: 10 }}>Scan a QR code</Text>}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
+      <Button title="Scan QR Code" onPress={openScanner} />
+
       <ScrollView horizontal>
         <View>
           <View style={[styles.row, styles.header]}>
