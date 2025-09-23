@@ -25,7 +25,7 @@ export default function HomeScreen() {
   // Fetch table data with polling
   useEffect(() => {
   const fetchData = () => {
-    fetch(`http://192.168.116.31:5000/stock_data/${rackId}`, {
+    fetch(`http://192.168.216.31:5000/stock_data/${rackId}`, {
       method: "GET",
       headers: {
         "Cache-Control": "no-cache",
@@ -54,7 +54,7 @@ export default function HomeScreen() {
   const toggleStatus = (sr_no: number, newValue: boolean) => {
     const newStatus = newValue ? "Kept in Rack" : "";
 
-    fetch(`http://192.168.116.31:5000/oper_table/${sr_no}/status`, {
+    fetch(`http://192.168.216.31:5000/oper_table/${sr_no}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status_val: newStatus }),
