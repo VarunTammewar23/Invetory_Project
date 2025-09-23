@@ -1,9 +1,7 @@
 // Frontend/screens/HomeScreen.tsx
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import {
-  
   Text,
   StyleSheet,
   ScrollView,
@@ -14,47 +12,45 @@ import {
 import { useRoute } from "@react-navigation/native";
 
 export default function HomeScreen() {
-
   const route = useRoute();
-  const { rackId } = route.params as { rackId: string };
-  console.log("Rack ID:", rackId);
-  
+  const { otp } = route.params as { otp: string }; // ✅ use otp instead of rackId
+  console.log("OTP:", otp);
+
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch table data with polling
+  // Fetch oper_table data by otp
   useEffect(() => {
-  const fetchData = () => {
-    fetch(`http://192.168.116.31:5000/stock_data/${rackId}`, {
-      method: "GET",
-      headers: {
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        console.log("Fetched rows:", json.length);
-        setData(json);
-        setLoading(false);
+    const fetchData = () => {
+      fetch(`http://192.168.216.31:5000/oper_table/${otp}`, {
+        method: "GET",
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       })
-      .catch((err) => {
-        console.error("Fetch error:", err);
-        setLoading(false);
-      });
-  };
+        .then((res) => res.json())
+        .then((json) => {
+          console.log("Fetched rows:", json.length);
+          setData(json);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Fetch error:", err);
+          setLoading(false);
+        });
+    };
 
-  fetchData();
-  const interval = setInterval(fetchData, 2000); // optional polling
-  return () => clearInterval(interval);
-}, [rackId]);
-
+    fetchData();
+    const interval = setInterval(fetchData, 2000); // polling every 2 sec
+    return () => clearInterval(interval);
+  }, [otp]);
 
   const toggleStatus = (sr_no: number, newValue: boolean) => {
     const newStatus = newValue ? "Kept in Rack" : "";
 
-    fetch(`http://192.168.116.31:5000/oper_table/${sr_no}/status`, {
+    fetch(`http://192.168.216.31:5000/oper_table/${sr_no}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status_val: newStatus }),
@@ -82,6 +78,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView horizontal>
         <View>
+          {/* Table Header */}
           <View style={[styles.row, styles.header]}>
             <Text style={[styles.cell, styles.headerText]}>Tray</Text>
             <Text style={[styles.cell, styles.headerText]}>Row</Text>
@@ -94,6 +91,7 @@ export default function HomeScreen() {
             <Text style={[styles.cell, styles.headerText]}>Status</Text>
           </View>
 
+          {/* Table Rows */}
           <ScrollView style={styles.dataScroll}>
             {data.map((item, index) => (
               <View
@@ -136,5 +134,5 @@ const styles = StyleSheet.create({
   cell: { flex: 1, minWidth: 100, padding: 8, fontSize: 14, color: "#000" },
   even: { backgroundColor: "#f9f9f9" },
   odd: { backgroundColor: "#fff" },
-  dataScroll: { maxHeight: 500 }, // moved from inline style
+  dataScroll: { maxHeight: 500 },
 });

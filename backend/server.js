@@ -10,12 +10,13 @@ app.use(express.json());
 
 // Test route
 app.get("/message", (req, res) => {
-  res.json({ message: "Server is running :)" });
+  res.json({ message: "Server is running :) " });
 });
 
-// Route to fetch stock items by rack number
+
+// ✅ Route to fetch stock items by rack number
 app.get("/stock_data/:rack_no", async (req, res) => {
-  const { rack_no } = req.params; // get rack number from URL
+  const { rack_no } = req.params;
   try {
     const [rows] = await pool.query(
       "SELECT * FROM stock_data WHERE rack_no = ?",
@@ -28,7 +29,7 @@ app.get("/stock_data/:rack_no", async (req, res) => {
   }
 });
 
-// Optional: route to fetch all stock_data
+// ✅ Route to fetch ALL stock_data
 app.get("/stock_data", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM stock_data");
@@ -39,7 +40,7 @@ app.get("/stock_data", async (req, res) => {
   }
 });
 
-// Optional: route for user_set if you need
+// ✅ Route to fetch ALL user_set
 app.get("/user_set", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM user_set");
@@ -50,6 +51,34 @@ app.get("/user_set", async (req, res) => {
   }
 });
 
+// 🔑 NEW: Route to fetch items from oper_table by OTP
+app.get("/oper_table/:otp", async (req, res) => {
+  const { otp } = req.params;
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM oper_table WHERE otp = ?",
+      [otp]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Database error");
+  }
+});
+
+// (Optional) Route to fetch all oper_table
+app.get("/oper_table", async (req, res) => {
+  try {
+    const [rows] = await pool.query("SELECT * FROM oper_table");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Database error");
+  }
+});
+
+
+// ✅ Start server
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running at http://0.0.0.0:${PORT}`);
 });

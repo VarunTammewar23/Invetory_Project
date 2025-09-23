@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  Alert,
 } from "react-native";
 
 type Props = {
@@ -14,39 +15,56 @@ type Props = {
 };
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const [rackId, setRackId] = useState("");
+  const [otp, setOtp] = useState("");
 
-  const handleLogin = () => {
-    if (rackId.trim() !== "") {
-      navigation.navigate("Home", { rackId });
+  const handleLogin = async () => {
+    if (otp.trim() === "") {
+      return Alert.alert("Please enter OTP");
+    }
+
+    try {
+      // 🔹 Call your backend API to validate OTP
+      const response = await fetch("http://<your-ip>:5000/validate-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otp }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // ✅ OTP valid → navigate with rackId/tableId returned from backend
+        navigation.navigate("Home", { rackId: data.rackId });
+      } else {
+        Alert.alert("Invalid OTP", "Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Something went wrong.");
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Title */}
       <Text style={styles.title}>Warehouse Management</Text>
 
-      {/* Illustration */}
       <Image
-        source={require("../assets/warehouse.png")} // make sure warehouse.png is in assets/
+        source={require("../assets/warehouse.png")}
         style={styles.image}
         resizeMode="contain"
       />
 
-      {/* Subtitle */}
       <Text style={styles.subtitle}>Hello!</Text>
-      <Text style={styles.text}>Please enter Rack ID to continue</Text>
+      <Text style={styles.text}>Enter OTP to continue</Text>
 
-      {/* Input */}
       <TextInput
         style={styles.input}
-        placeholder="Rack ID"
-        value={rackId}
-        onChangeText={setRackId}
+        placeholder="Enter OTP"
+        value={otp}
+        onChangeText={setOtp}
+        keyboardType="numeric"
       />
 
-      {/* Button */}
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
@@ -70,6 +88,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
     fontSize: 16,
+    textAlign: "center",
+    letterSpacing: 4,
   },
   button: {
     backgroundColor: "#27ae60",
