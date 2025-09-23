@@ -54,6 +54,9 @@ android {
 
 dependencies {
     implementation project(':react-native-camera') // qr code
+   
+    // implementation "com.google.mlkit:barcode-scanning:17.2.0"
+
     implementation("com.facebook.react:react-android")
 
     if (hermesEnabled.toBoolean()) {

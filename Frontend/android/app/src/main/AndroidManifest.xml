@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE"/>
    <uses-permission android:name="android.permission.CAMERA"/>   <!-- qr code -->
-    <uses-permission android:name="android.permission.FLASHLIGHT"/>
+    <uses-permission android:name="android.permission.FLASHLIGHT"/>   <!-- qr code -->
 
 
     <application
