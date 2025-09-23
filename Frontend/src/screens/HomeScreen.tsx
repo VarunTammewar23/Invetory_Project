@@ -1,64 +1,79 @@
-// Frontend/screens/HomeScreen.tsx
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
   Text,
   StyleSheet,
-  ScrollView,
   View,
   ActivityIndicator,
   Switch,
+  FlatList,
+  ScrollView,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker"; // Install: npm install @react-native-picker/picker
+
+type OperItem = {
+  sr_no: number;
+  tray_no: string | number;
+  row_no: string | number;
+  col_no: string | number;
+  part_name: string;
+  part_code: string;
+  part_desp: string;
+  oper: string;
+  qty_val: number;
+  status_val: string;
+};
 
 export default function HomeScreen() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<OperItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCol, setSelectedCol] = useState<string | "All">("All");
 
-  // Fetch table data with polling
   useEffect(() => {
-    const fetchData = () => {
-      fetch("http://192.168.1.103:5000/oper_table", {
-        method: "GET",
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      })
-        .then((res) => res.json())
-        .then((json) => {
-          console.log("Fetched rows:", json.length);
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        const res = await fetch("http://192.168.216.226:5000/oper_table", {
+          headers: { "Cache-Control": "no-cache" },
+        });
+        const json = await res.json();
+        if (isMounted) {
           setData(json);
           setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Fetch error:", err);
-          setLoading(false);
-        });
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
     };
 
     fetchData();
     const interval = setInterval(fetchData, 2000);
-    return () => clearInterval(interval);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
-  const toggleStatus = (sr_no: number, newValue: boolean) => {
+  const toggleStatus = async (sr_no: number, newValue: boolean) => {
     const newStatus = newValue ? "Kept in Rack" : "";
 
-    fetch(`http://192.168.1.103:5000/oper_table/${sr_no}/status`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status_val: newStatus }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        setData((prev) =>
-          prev.map((item) =>
-            item.sr_no === sr_no ? { ...item, status_val: newStatus } : item
-          )
-        );
-      })
-      .catch((err) => console.error("Update error:", err));
+    setData((prev) =>
+      prev.map((item) =>
+        item.sr_no === sr_no ? { ...item, status_val: newStatus } : item
+      )
+    );
+
+    try {
+      await fetch(`http://192.168.216.226:5000/oper_table/${sr_no}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status_val: newStatus }),
+      });
+    } catch (err) {
+      console.error("Update error:", err);
+    }
   };
 
   if (loading) {
@@ -69,10 +84,52 @@ export default function HomeScreen() {
     );
   }
 
+  // Filter data by selected column
+  const filteredData =
+    selectedCol === "All"
+      ? data
+      : data.filter((item) => item.col_no.toString() === selectedCol);
+
+  const renderItem = ({ item, index }: { item: OperItem; index: number }) => (
+    <View style={[styles.row, index % 2 === 0 ? styles.even : styles.odd]}>
+      <Text style={styles.cell}>{item.tray_no}</Text>
+      <Text style={styles.cell}>{item.row_no}</Text>
+      <Text style={styles.cell}>{item.col_no}</Text>
+      <Text style={styles.cell}>{item.part_name}</Text>
+      <Text style={styles.cell}>{item.part_code}</Text>
+      <Text style={styles.cell}>{item.part_desp}</Text>
+      <Text style={styles.cell}>{item.oper}</Text>
+      <Text style={styles.cell}>{item.qty_val}</Text>
+      <Switch
+        value={item.status_val === "Kept in Rack"}
+        onValueChange={(val) => toggleStatus(item.sr_no, val)}
+      />
+    </View>
+  );
+
+  // Extract unique column numbers for dropdown
+  const uniqueCols = Array.from(new Set(data.map((item) => item.col_no.toString())));
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Dropdown filter */}
+      <View style={styles.filterRow}>
+        <Text style={{ fontWeight: "bold", marginRight: 10 }}>Filter by Col:</Text>
+        <Picker
+          selectedValue={selectedCol}
+          style={{ height: 50, width: 150 }}
+          onValueChange={(value) => setSelectedCol(value)}
+        >
+          <Picker.Item label="All" value="All" />
+          {uniqueCols.map((col) => (
+            <Picker.Item key={col} label={col} value={col} />
+          ))}
+        </Picker>
+      </View>
+
       <ScrollView horizontal>
         <View>
+          {/* Table header */}
           <View style={[styles.row, styles.header]}>
             <Text style={[styles.cell, styles.headerText]}>Tray</Text>
             <Text style={[styles.cell, styles.headerText]}>Row</Text>
@@ -85,28 +142,13 @@ export default function HomeScreen() {
             <Text style={[styles.cell, styles.headerText]}>Status</Text>
           </View>
 
-          <ScrollView style={{ maxHeight: 500 }}>
-            {data.map((item, index) => (
-              <View
-                key={item.sr_no}
-                style={[styles.row, index % 2 === 0 ? styles.even : styles.odd]}
-              >
-                <Text style={styles.cell}>{item.tray_no}</Text>
-                <Text style={styles.cell}>{item.row_no}</Text>
-                <Text style={styles.cell}>{item.col_no}</Text>
-                <Text style={styles.cell}>{item.part_name}</Text>
-                <Text style={styles.cell}>{item.part_code}</Text>
-                <Text style={styles.cell}>{item.part_desp}</Text>
-                <Text style={styles.cell}>{item.oper}</Text>
-                <Text style={styles.cell}>{item.qty_val}</Text>
-
-                <Switch
-                  value={item.status_val === "Kept in Rack"}
-                  onValueChange={(val) => toggleStatus(item.sr_no, val)}
-                />
-              </View>
-            ))}
-          </ScrollView>
+          {/* Table body */}
+          <FlatList
+            data={filteredData}
+            keyExtractor={(item) => item.sr_no.toString()}
+            renderItem={renderItem}
+            style={{ maxHeight: 500 }}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -127,4 +169,9 @@ const styles = StyleSheet.create({
   cell: { flex: 1, minWidth: 100, padding: 8, fontSize: 14, color: "#000" },
   even: { backgroundColor: "#f9f9f9" },
   odd: { backgroundColor: "#fff" },
+  filterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
 });
