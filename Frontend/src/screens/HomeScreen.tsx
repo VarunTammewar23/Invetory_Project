@@ -35,7 +35,7 @@ export default function HomeScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [selectedCol, setSelectedCol] = useState<"All" | string>("All");
 
-  // Fetch data by OTP
+  // ✅ Fetch data by OTP
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -85,7 +85,7 @@ export default function HomeScreen({ navigation }: any) {
     );
   }
 
-  // Filter by column
+  // ✅ Filter by column
   const filteredData =
     selectedCol === "All"
       ? data
@@ -135,10 +135,22 @@ export default function HomeScreen({ navigation }: any) {
       {/* ✅ QR Scanner Button */}
       <Button
         title="Scan QR Code"
-        onPress={() => navigation.navigate("QRScanner")}
+        onPress={() =>
+          navigation.navigate("QRScanner", {
+            onScan: (columnNo: string) => {
+              // set selectedCol from scanned QR
+              setSelectedCol(columnNo);
+            },
+          })
+        }
       />
 
-      {/* Dropdown filter */}
+      {/* Show which column is active */}
+      <Text style={{ marginVertical: 10, fontWeight: "bold" }}>
+        Current Column: {selectedCol}
+      </Text>
+
+      {/* Dropdown filter (still available if user prefers manual selection) */}
       <View style={styles.filterRow}>
         <Text style={{ fontWeight: "bold", marginRight: 10 }}>
           Filter by Col:
