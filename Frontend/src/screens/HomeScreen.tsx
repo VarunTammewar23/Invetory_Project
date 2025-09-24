@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
+  View,
   Text,
   StyleSheet,
-  View,
   ActivityIndicator,
-  Switch,
   FlatList,
+  Switch,
   ScrollView,
+  Alert,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker"; // Install: npm install @react-native-picker/picker
+import { Picker } from "@react-native-picker/picker";
+import { useRoute } from "@react-navigation/native";
 
 type OperItem = {
   sr_no: number;
@@ -25,40 +27,38 @@ type OperItem = {
 };
 
 export default function HomeScreen() {
+  const route = useRoute();
+  const { otp } = route.params as { otp: string }; // OTP from LoginScreen
+
   const [data, setData] = useState<OperItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCol, setSelectedCol] = useState<string | "All">("All");
+  const [selectedCol, setSelectedCol] = useState<"All" | string>("All");
 
+  // Fetch data by OTP
   useEffect(() => {
-    let isMounted = true;
-
     const fetchData = async () => {
       try {
-        const res = await fetch("http://192.168.216.226:5000/oper_table", {
+        const res = await fetch(`http://192.168.216.31:5000/oper_table/${otp}`, {
           headers: { "Cache-Control": "no-cache" },
         });
         const json = await res.json();
-        if (isMounted) {
-          setData(json);
-          setLoading(false);
-        }
+        setData(json);
+        setLoading(false);
       } catch (err) {
         console.error("Fetch error:", err);
+        setLoading(false);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 2000);
+    const interval = setInterval(fetchData, 2000); // Polling
+    return () => clearInterval(interval);
+  }, [otp]);
 
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
+  const toggleStatus = async (sr_no: number, currentStatus: string) => {
+    const newStatus = currentStatus === "Kept in Rack" ? "" : "Kept in Rack";
 
-  const toggleStatus = async (sr_no: number, newValue: boolean) => {
-    const newStatus = newValue ? "Kept in Rack" : "";
-
+    // Optimistic update
     setData((prev) =>
       prev.map((item) =>
         item.sr_no === sr_no ? { ...item, status_val: newStatus } : item
@@ -66,7 +66,7 @@ export default function HomeScreen() {
     );
 
     try {
-      await fetch(`http://192.168.216.226:5000/oper_table/${sr_no}/status`, {
+      await fetch(`http://192.168.216.31:5000/oper_table/${sr_no}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status_val: newStatus }),
@@ -78,17 +78,19 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.center}>
+      <View style={styles.center}>
         <ActivityIndicator size="large" color="#0000ff" />
-      </SafeAreaView>
+      </View>
     );
   }
 
-  // Filter data by selected column
+  // Filter by column
   const filteredData =
     selectedCol === "All"
       ? data
       : data.filter((item) => item.col_no.toString() === selectedCol);
+
+  const uniqueCols = Array.from(new Set(data.map((item) => item.col_no.toString())));
 
   const renderItem = ({ item, index }: { item: OperItem; index: number }) => (
     <View style={[styles.row, index % 2 === 0 ? styles.even : styles.odd]}>
@@ -100,15 +102,27 @@ export default function HomeScreen() {
       <Text style={styles.cell}>{item.part_desp}</Text>
       <Text style={styles.cell}>{item.oper}</Text>
       <Text style={styles.cell}>{item.qty_val}</Text>
-      <Switch
-        value={item.status_val === "Kept in Rack"}
-        onValueChange={(val) => toggleStatus(item.sr_no, val)}
-      />
+      <View style={styles.cell}>
+        <Switch
+           value={item.status_val === "Kept in Rack"}
+           onValueChange={() => {
+            Alert.alert(
+            "Confirm Action",
+              `Do you want to ${item.status_val === "Kept in Rack" ? "remove from rack" : "keep in rack"}?`,
+               [
+                 { text: "No", style: "cancel" },
+                 {
+                  text: "Yes",
+                   onPress: () => toggleStatus(item.sr_no, item.status_val),
+                  },
+               ], 
+            );
+        }}
+        />
+
+      </View>
     </View>
   );
-
-  // Extract unique column numbers for dropdown
-  const uniqueCols = Array.from(new Set(data.map((item) => item.col_no.toString())));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -117,7 +131,7 @@ export default function HomeScreen() {
         <Text style={{ fontWeight: "bold", marginRight: 10 }}>Filter by Col:</Text>
         <Picker
           selectedValue={selectedCol}
-          style={{ height: 50, width: 150 }}
+          style={{ flex: 1, height: 50 }}
           onValueChange={(value) => setSelectedCol(value)}
         >
           <Picker.Item label="All" value="All" />
@@ -127,29 +141,27 @@ export default function HomeScreen() {
         </Picker>
       </View>
 
+      {/* Table */}
       <ScrollView horizontal>
-        <View>
-          {/* Table header */}
-          <View style={[styles.row, styles.header]}>
-            <Text style={[styles.cell, styles.headerText]}>Tray</Text>
-            <Text style={[styles.cell, styles.headerText]}>Row</Text>
-            <Text style={[styles.cell, styles.headerText]}>Col</Text>
-            <Text style={[styles.cell, styles.headerText]}>Part Name</Text>
-            <Text style={[styles.cell, styles.headerText]}>Part Code</Text>
-            <Text style={[styles.cell, styles.headerText]}>Description</Text>
-            <Text style={[styles.cell, styles.headerText]}>Operation</Text>
-            <Text style={[styles.cell, styles.headerText]}>Qty</Text>
-            <Text style={[styles.cell, styles.headerText]}>Status</Text>
-          </View>
-
-          {/* Table body */}
-          <FlatList
-            data={filteredData}
-            keyExtractor={(item) => item.sr_no.toString()}
-            renderItem={renderItem}
-            style={{ maxHeight: 500 }}
-          />
-        </View>
+        <FlatList
+          data={filteredData}
+          keyExtractor={(item) => item.sr_no.toString()}
+          renderItem={renderItem}
+          ListHeaderComponent={() => (
+            <View style={[styles.row, styles.header]}>
+              <Text style={[styles.cell, styles.headerText]}>Tray</Text>
+              <Text style={[styles.cell, styles.headerText]}>Row</Text>
+              <Text style={[styles.cell, styles.headerText]}>Col</Text>
+              <Text style={[styles.cell, styles.headerText]}>Part Name</Text>
+              <Text style={[styles.cell, styles.headerText]}>Part Code</Text>
+              <Text style={[styles.cell, styles.headerText]}>Description</Text>
+              <Text style={[styles.cell, styles.headerText]}>Operation</Text>
+              <Text style={[styles.cell, styles.headerText]}>Qty</Text>
+              <Text style={[styles.cell, styles.headerText]}>Status</Text>
+            </View>
+          )}
+          contentContainerStyle={{ flexGrow: 1 }}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -158,20 +170,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 10 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#ddd",
-    alignItems: "center",
-  },
+  row: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#ddd", alignItems: "center" },
   header: { backgroundColor: "#333" },
   headerText: { color: "#fff", fontWeight: "bold" },
-  cell: { flex: 1, minWidth: 100, padding: 8, fontSize: 14, color: "#000" },
+  cell: { flex: 1, minWidth: 120, padding: 8, fontSize: 14, color: "#000" },
   even: { backgroundColor: "#f9f9f9" },
   odd: { backgroundColor: "#fff" },
-  filterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
+  filterRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
 });
