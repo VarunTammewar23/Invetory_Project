@@ -24,7 +24,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
     try {
       // 🔹 Call backend API to validate OTP
-      const response = await fetch("http://192.168.216.31:5000/validate-otp", {
+      const response = await fetch("http://192.168.1.103:5000/validate-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ otp }),

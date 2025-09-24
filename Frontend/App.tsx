@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import LoginScreen from "./src/screens/LoginScreen";
 import HomeScreen from "./src/screens/HomeScreen";
+import QRScanner from "./src/screens/QRScanner";
 
 const Stack = createNativeStackNavigator();
 
@@ -21,6 +22,10 @@ export default function App() {
           name="Home"
           component={HomeScreen}
           options={{ title: "Warehouse" }}
+        />
+        <Stack.Screen 
+        name="QRScanner" 
+        component={QRScanner} 
         />
       </Stack.Navigator>
     </NavigationContainer>

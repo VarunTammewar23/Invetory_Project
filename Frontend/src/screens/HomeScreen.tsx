@@ -9,6 +9,7 @@ import {
   Switch,
   ScrollView,
   Alert,
+  Button,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useRoute } from "@react-navigation/native";
@@ -26,7 +27,7 @@ type OperItem = {
   status_val: string;
 };
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   const route = useRoute();
   const { otp } = route.params as { otp: string }; // OTP from LoginScreen
 
@@ -38,7 +39,7 @@ export default function HomeScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`http://192.168.216.31:5000/oper_table/${otp}`, {
+        const res = await fetch(`http://192.168.1.103:5000/oper_table/${otp}`, {
           headers: { "Cache-Control": "no-cache" },
         });
         const json = await res.json();
@@ -66,7 +67,7 @@ export default function HomeScreen() {
     );
 
     try {
-      await fetch(`http://192.168.216.31:5000/oper_table/${sr_no}/status`, {
+      await fetch(`http://192.168.1.103:5000/oper_table/${sr_no}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status_val: newStatus }),
@@ -90,7 +91,9 @@ export default function HomeScreen() {
       ? data
       : data.filter((item) => item.col_no.toString() === selectedCol);
 
-  const uniqueCols = Array.from(new Set(data.map((item) => item.col_no.toString())));
+  const uniqueCols = Array.from(
+    new Set(data.map((item) => item.col_no.toString()))
+  );
 
   const renderItem = ({ item, index }: { item: OperItem; index: number }) => (
     <View style={[styles.row, index % 2 === 0 ? styles.even : styles.odd]}>
@@ -104,31 +107,42 @@ export default function HomeScreen() {
       <Text style={styles.cell}>{item.qty_val}</Text>
       <View style={styles.cell}>
         <Switch
-           value={item.status_val === "Kept in Rack"}
-           onValueChange={() => {
+          value={item.status_val === "Kept in Rack"}
+          onValueChange={() => {
             Alert.alert(
-            "Confirm Action",
-              `Do you want to ${item.status_val === "Kept in Rack" ? "remove from rack" : "keep in rack"}?`,
-               [
-                 { text: "No", style: "cancel" },
-                 {
+              "Confirm Action",
+              `Do you want to ${
+                item.status_val === "Kept in Rack"
+                  ? "remove from rack"
+                  : "keep in rack"
+              }?`,
+              [
+                { text: "No", style: "cancel" },
+                {
                   text: "Yes",
-                   onPress: () => toggleStatus(item.sr_no, item.status_val),
-                  },
-               ], 
+                  onPress: () => toggleStatus(item.sr_no, item.status_val),
+                },
+              ]
             );
-        }}
+          }}
         />
-
       </View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* ✅ QR Scanner Button */}
+      <Button
+        title="Scan QR Code"
+        onPress={() => navigation.navigate("QRScanner")}
+      />
+
       {/* Dropdown filter */}
       <View style={styles.filterRow}>
-        <Text style={{ fontWeight: "bold", marginRight: 10 }}>Filter by Col:</Text>
+        <Text style={{ fontWeight: "bold", marginRight: 10 }}>
+          Filter by Col:
+        </Text>
         <Picker
           selectedValue={selectedCol}
           style={{ flex: 1, height: 50 }}
@@ -170,11 +184,20 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 10 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  row: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#ddd", alignItems: "center" },
+  row: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#ddd",
+    alignItems: "center",
+  },
   header: { backgroundColor: "#333" },
   headerText: { color: "#fff", fontWeight: "bold" },
   cell: { flex: 1, minWidth: 120, padding: 8, fontSize: 14, color: "#000" },
   even: { backgroundColor: "#f9f9f9" },
   odd: { backgroundColor: "#fff" },
-  filterRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  filterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
 });
