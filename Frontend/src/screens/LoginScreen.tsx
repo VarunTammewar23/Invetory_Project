@@ -1,4 +1,4 @@
-import { ScrollView } from "react-native";
+import { ScrollView, ActivityIndicator } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -6,9 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  StyleSheet,
   Alert,
 } from "react-native";
+import { ScaledSheet } from "react-native-size-matters";
 
 type Props = {
   navigation: any;
@@ -16,15 +16,20 @@ type Props = {
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleLogin = async () => {
     if (otp.trim() === "") {
-      return Alert.alert("Please enter OTP");
+      setErrorMsg("Please enter OTP");
+      return;
     }
 
+    setLoading(true);
+    setErrorMsg("");
+
     try {
-      // 🔹 Call backend API to validate OTP
-      const response = await fetch("http://192.168.216.31:5000/validate-otp", {
+      const response = await fetch("http://192.168.58.31:5000/validate-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ otp }),
@@ -33,75 +38,102 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       const data = await response.json();
 
       if (data.success) {
-        // ✅ OTP valid → navigate with otp
+        Alert.alert("Success", "OTP is valid 🎉");
         navigation.navigate("Home", { otp });
       } else {
-        Alert.alert("Invalid OTP", "Please try again.");
+        setErrorMsg("Invalid OTP. Please try again.");
       }
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Something went wrong.");
+      setErrorMsg("Error connecting to server.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-  <SafeAreaView style={styles.container}>
-    <ScrollView
-      contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center" }}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>Warehouse Management</Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>
+          <Text>Warehouse </Text>
+          <Text>Management</Text>
+        </Text>
 
-      <Image
-        source={require("../assets/warehouse.png")}
-        style={styles.image}
-        resizeMode="contain"
-      />
+        <Image
+          source={require("../assets/warehouse.png")}
+          style={styles.image}
+          resizeMode="contain"
+        />
 
-      <Text style={styles.subtitle}>Hello!</Text>
-      <Text style={styles.text}>Enter OTP to continue</Text>
+        <Text style={styles.subtitle}>Hello!</Text>
+        <Text style={styles.text}>Enter OTP to continue</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Enter OTP"
-        value={otp}
-        onChangeText={setOtp}
-        keyboardType="numeric"
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter OTP"
+          value={otp}
+          onChangeText={setOtp}
+          keyboardType="numeric"
+        />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Sign In</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  </SafeAreaView>
-);
+        {errorMsg !== "" && (
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        )}
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#27ae60" style={{ marginTop: 10 }} />
+        ) : (
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>Sign In</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
 export default LoginScreen;
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", alignItems: "center", padding: 20 },
-  title: { fontSize: 28, fontWeight: "bold", marginTop: 10, marginBottom: 10 },
-  image: { width: 200, height: 200, marginVertical: 10 },
-  subtitle: { fontSize: 20, fontWeight: "600", marginTop: 10 },
-  text: { fontSize: 14, color: "gray", marginBottom: 15 },
+const styles = ScaledSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20@s",
+  },
+  title: {
+    fontSize: "28@ms",
+    fontWeight: "bold",
+    marginTop: "10@vs",
+    marginBottom: "10@vs",
+    textAlign: "center",
+  },
+  image: { width: "250@s", height: "250@vs", marginVertical: "10@vs" },
+  subtitle: { fontSize: "22@ms", fontWeight: "600", marginTop: "10@vs" },
+  text: { fontSize: "16@ms", color: "gray", marginBottom: "15@vs" },
   input: {
     width: "90%",
     borderWidth: 1,
     borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-    fontSize: 16,
+    padding: "12@ms",
+    borderRadius: "8@ms",
+    marginBottom: "10@vs",
+    fontSize: "16@ms",
     textAlign: "center",
     letterSpacing: 4,
   },
   button: {
     backgroundColor: "#27ae60",
-    padding: 14,
-    borderRadius: 8,
+    paddingVertical: "12@vs",
+    borderRadius: "8@ms",
     width: "90%",
     alignItems: "center",
+    marginTop: "5@vs",
   },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: "16@ms" },
+  errorText: { color: "red", fontSize: "14@ms", marginBottom: "5@vs" },
 });
