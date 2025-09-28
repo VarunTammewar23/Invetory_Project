@@ -14,6 +14,7 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from "react-native-vision-camera";
+import { ScaledSheet } from "react-native-size-matters" ;
 
 export default function QRScanner({ navigation, route }: any) {
   const [scanned, setScanned] = useState<string | null>(null);
@@ -122,7 +123,7 @@ export default function QRScanner({ navigation, route }: any) {
               </Pressable>
 
               <Pressable style={styles.scanAgainBtn} onPress={onScanAgain}>
-                <Text>Scan again</Text>
+               <Text style={styles.scanAgainText}>Scan Again</Text>
               </Pressable>
             </View>
           </View>
@@ -134,43 +135,102 @@ export default function QRScanner({ navigation, route }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles =ScaledSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center",  },
+
   footer: {
     position: "absolute",
-    bottom: 28,
-    left: 12,
-    right: 12,
+    bottom: "28@vs",
+    left: "12@s",
+    right: "12@s",
     backgroundColor: "#ffffffdd",
-    padding: 12,
-    borderRadius: 10,
+    paddingHorizontal: "16@s",
+    borderRadius: "10@ms",
+    height: '150@vs',
+    justifyContent: "center",
   },
-  text: { fontSize: 12, color: "#222" },
-  value: { fontSize: 16, marginTop: 6, color: "#111" },
+
+  text:{fontSize: '24@s', color: "#010000ff" }, //Scanning QR Code Text
+  value:{ fontSize:'24@ms', marginTop: '6@vs', color: "#000000ff", fontWeight: "400", }, 
+
   actionsRow: {
     flexDirection: "row",
-    marginTop: 10,
-    justifyContent: "flex-start",
-    gap: 8,
-  },
+    marginTop: '10@vs',
+    justifyContent: "center",
+    gap: '8@s',
+    padding: '10@s',
+  },  // uthis column and scan again button row
+
   useBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#007aff",
-    borderRadius: 8,
-    marginRight: 8,
-  },
-  useBtnText: { color: "#fff", fontWeight: "600" },
-  scanAgainBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#eee",
-    borderRadius: 8,
-  },
-  btn: {
-    padding: 10,
-    backgroundColor: "#eee",
-    borderRadius: 8,
-  },
-});
+    paddingVertical: '8@vs',
+    paddingHorizontal: '12@s',
+    backgroundColor: "#10a52eff",
+    borderRadius: '8@ms',
+    marginRight: '8@ms',
+    height: '50@vs',
+    width: '130@vs',
+    },
+
+    useBtnText: { color: "#fff", fontWeight: "500", fontSize:'16.5@ms' },
+    scanAgainText: {color: "#000000ff", fontWeight: "600", fontSize: '16@ms'},
+
+    scanAgainBtn: {
+      paddingVertical: '8@vs',
+      paddingHorizontal: '12@s',
+      backgroundColor: "#eee",
+      borderRadius: '8@ms',
+      height: '50@vs',
+      width: '130@vs',
+      },
+
+      btn: {
+        padding: '12@s',
+        backgroundColor: "#eee",
+        borderRadius: '8@ms',
+        },
+      });
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1, backgroundColor: "#000" },
+//   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+
+//   footer: {
+//     position: "absolute",
+//     bottom: 28,
+//     left: 12,
+//     right: 12,
+//     backgroundColor: "#ffffffdd",
+//     padding: 12,
+//     borderRadius: 10,
+//   },
+
+//   text: { fontSize: 12, color: "#222" },
+//   value: { fontSize: 16, marginTop: 6, color: "#111" },
+
+//   actionsRow: {
+//     flexDirection: "row",
+//     marginTop: 10,
+//     justifyContent: "flex-start",
+//     gap: 8,
+//   },
+//   useBtn: {
+//     paddingVertical: 8,
+//     paddingHorizontal: 12,
+//     backgroundColor: "#007aff",
+//     borderRadius: 8,
+//     marginRight: 8,
+//   },
+//   useBtnText: { color: "#fff", fontWeight: "600" },
+//   scanAgainBtn: {
+//     paddingVertical: 8,
+//     paddingHorizontal: 12,
+//     backgroundColor: "#eee",
+//     borderRadius: 8,
+//   },
+//   btn: {
+//     padding: 10,
+//     backgroundColor: "#eee",
+//     borderRadius: 8,
+//   },
+// });
