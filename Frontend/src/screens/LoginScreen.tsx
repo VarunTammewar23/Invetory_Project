@@ -15,12 +15,13 @@ type Props = {
 };
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const [otp, setOtp] = useState("");
+  // state name also changed to otp_val for clarity
+  const [otp_val, setOtpVal] = useState(""); 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleLogin = async () => {
-    if (otp.trim() === "") {
+    if (otp_val.trim() === "") {
       setErrorMsg("Please enter OTP");
       return;
     }
@@ -29,17 +30,17 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     setErrorMsg("");
 
     try {
-      const response = await fetch("http://192.168.58.31:5000/validate-otp", {
+      const response = await fetch("http://192.168.63.31:5000/validate-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otp }),
+        body: JSON.stringify({ otp_val }), // use otp_val key
       });
 
       const data = await response.json();
 
       if (data.success) {
         Alert.alert("Success", "OTP is valid 🎉");
-        navigation.navigate("Home", { otp });
+        navigation.navigate("Home", { otp: otp_val }); // send otp_val
       } else {
         setErrorMsg("Invalid OTP. Please try again.");
       }
@@ -74,8 +75,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           style={styles.input}
           placeholder="Enter OTP"
-          value={otp}
-          onChangeText={setOtp}
+          value={otp_val} // bind to otp_val
+          onChangeText={setOtpVal} // bind setter
           keyboardType="numeric"
         />
 
@@ -84,7 +85,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         )}
 
         {loading ? (
-          <ActivityIndicator size="large" color="#27ae60" style={{ marginTop: 10 }} />
+          <ActivityIndicator
+            size="large"
+            color="#27ae60"
+            style={{ marginTop: 10 }}
+          />
         ) : (
           <TouchableOpacity style={styles.button} onPress={handleLogin}>
             <Text style={styles.buttonText}>Sign In</Text>

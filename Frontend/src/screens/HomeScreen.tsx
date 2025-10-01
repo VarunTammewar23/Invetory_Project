@@ -1,4 +1,4 @@
-// src/screens/HomeScreen.tsx  (replace your existing file)
+// src/screens/HomeScreen.tsx
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -16,15 +16,14 @@ import { ScaledSheet } from "react-native-size-matters";
 
 type OperItem = {
   sr_no: number;
-  tray_no: string | number;
-  row_no: string | number;
-  col_no: string | number;
+  aisle_no: number;
+  tray_no: number;
   part_name: string;
-  part_code: string;
   part_desp: string;
   oper: string;
   qty_val: number;
   status_val: string;
+  otp_val: string;
 };
 
 export default function HomeScreen({ navigation }: any) {
@@ -33,13 +32,13 @@ export default function HomeScreen({ navigation }: any) {
 
   const [data, setData] = useState<OperItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCol, setSelectedCol] = useState<"All" | string>("All");
+  const [selectedAisle, setSelectedAisle] = useState<"All" | string>("All");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://192.168.58.31:5000/oper_table/${otp}`,
+          `http://192.168.63.31:5000/oper_table/${otp}`,
           { headers: { "Cache-Control": "no-cache" } }
         );
         const json = await res.json();
@@ -59,10 +58,12 @@ export default function HomeScreen({ navigation }: any) {
   const toggleStatus = async (sr_no: number, currentStatus: string) => {
     const newStatus = currentStatus === "Kept in Rack" ? "" : "Kept in Rack";
     setData((prev) =>
-      prev.map((it) => (it.sr_no === sr_no ? { ...it, status_val: newStatus } : it))
+      prev.map((it) =>
+        it.sr_no === sr_no ? { ...it, status_val: newStatus } : it
+      )
     );
     try {
-      await fetch(`http://192.168.58.31:5000/oper_table/${sr_no}/status`, {
+      await fetch(`http://192.168.63.31:5000/oper_table/${sr_no}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status_val: newStatus }),
@@ -81,11 +82,11 @@ export default function HomeScreen({ navigation }: any) {
   }
 
   const filteredData =
-    selectedCol === "All"
+    selectedAisle === "All"
       ? data
-      : data.filter((item) => item.col_no.toString() === selectedCol);
+      : data.filter((item) => item.aisle_no.toString() === selectedAisle);
 
-  // Small helper component to keep markup concise and consistent
+  // Helper cell component
   const Cell = ({ style, children, textStyle, lines = 1 }: any) => (
     <View style={[styles.cellContainer, style]}>
       <Text
@@ -100,27 +101,17 @@ export default function HomeScreen({ navigation }: any) {
 
   const renderItem = ({ item, index }: { item: OperItem; index: number }) => (
     <View style={[styles.row, index % 2 === 0 ? styles.even : styles.odd]}>
+      <Cell style={styles.aisle}>{item.aisle_no}</Cell>
       <Cell style={styles.tray}>{item.tray_no}</Cell>
-      <Cell style={styles.rowCol}>{item.row_no}</Cell>
-      <Cell style={styles.rowCol}>{item.col_no}</Cell>
-
-      {/* left aligned text for names/descriptions */}
       <Cell style={styles.partName} textStyle={styles.leftText}>
         {item.part_name}
       </Cell>
-
-      <Cell style={styles.partCode} textStyle={styles.leftText}>
-        {item.part_code}
-      </Cell>
-
       <Cell style={styles.partDesc} textStyle={styles.leftText}>
         {item.part_desp}
       </Cell>
-
       <Cell style={styles.operation} textStyle={styles.leftText}>
         {item.oper}
       </Cell>
-
       <Cell style={styles.qty}>{item.qty_val}</Cell>
 
       <View style={[styles.cellContainer, styles.status]}>
@@ -130,7 +121,9 @@ export default function HomeScreen({ navigation }: any) {
             Alert.alert(
               "Confirm Action",
               `Do you want to ${
-                item.status_val === "Kept in Rack" ? "remove from rack" : "keep in rack"
+                item.status_val === "Kept in Rack"
+                  ? "remove from rack"
+                  : "keep in rack"
               }?`,
               [
                 { text: "No", style: "cancel" },
@@ -147,77 +140,93 @@ export default function HomeScreen({ navigation }: any) {
   );
 
   return (
-  <SafeAreaView style={styles.container}>
-    {/* Scan QR Code button */}
-    <TouchableOpacity
-      style={styles.scanButton}
-      onPress={() =>
-        navigation.navigate("QRScanner", {
-          onScan: (columnNo: string) => setSelectedCol(columnNo),
-        })
-      }
-    >
-      <Text style={styles.scanButtonText}>SCAN QR CODE</Text>
-    </TouchableOpacity>
-
-    {/* 🔑 New button to reset filter */}
-    {selectedCol !== "All" && (
+    <SafeAreaView style={styles.container}>
+      {/* Scan QR Code button */}
       <TouchableOpacity
-        style={styles.resetButton}
-        onPress={() => setSelectedCol("All")}
+        style={styles.scanButton}
+        onPress={() =>
+          navigation.navigate("QRScanner", {
+            onScan: (aisleNo: string) => setSelectedAisle(aisleNo),
+          })
+        }
       >
-        <Text style={styles.resetButtonText}>SHOW ALL ITEMS</Text>
+        <Text style={styles.scanButtonText}>SCAN QR CODE</Text>
       </TouchableOpacity>
-    )}
 
-    <Text style={styles.currentColText}>Current Column: {selectedCol}</Text>
+      {/* Reset button */}
+      {selectedAisle !== "All" && (
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={() => setSelectedAisle("All")}
+        >
+          <Text style={styles.resetButtonText}>SHOW ALL ITEMS</Text>
+        </TouchableOpacity>
+      )}
 
-    {/* Horizontal scroll wrapper */}
-    <ScrollView horizontal showsHorizontalScrollIndicator>
-      <View>
-        <FlatList
-          data={filteredData}
-          keyExtractor={(item) => item.sr_no.toString()}
-          renderItem={renderItem}
-          ListHeaderComponent={() => (
-            <View style={[styles.row, styles.header]}>
-              <Cell style={styles.tray} textStyle={[styles.headerText, styles.centerText]}>
-                Tray
-              </Cell>
-              <Cell style={styles.rowCol} textStyle={[styles.headerText, styles.centerText]}>
-                Row
-              </Cell>
-              <Cell style={styles.rowCol} textStyle={[styles.headerText, styles.centerText]}>
-                Col
-              </Cell>
-              <Cell style={styles.partName} textStyle={[styles.headerText, styles.leftText]}>
-                Part Name
-              </Cell>
-              <Cell style={styles.partCode} textStyle={[styles.headerText, styles.leftText]}>
-                Part Code
-              </Cell>
-              <Cell style={styles.partDesc} textStyle={[styles.headerText, styles.leftText]}>
-                Description
-              </Cell>
-              <Cell style={styles.operation} textStyle={[styles.headerText, styles.leftText]}>
-                Operation
-              </Cell>
-              <Cell style={styles.qty} textStyle={[styles.headerText, styles.centerText]}>
-                Qty
-              </Cell>
-              <Cell style={styles.status} textStyle={[styles.headerText, styles.centerText]}>
-                Status
-              </Cell>
-            </View>
-          )}
-          contentContainerStyle={{ flexGrow: 1 }}
-        />
-      </View>
-    </ScrollView>
-  </SafeAreaView>
-);
+      <Text style={styles.currentColText}>
+        Current Aisle: {selectedAisle}
+      </Text>
+
+      {/* Scrollable Table */}
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View>
+          <FlatList
+            data={filteredData}
+            keyExtractor={(item) => item.sr_no.toString()}
+            renderItem={renderItem}
+            ListHeaderComponent={() => (
+              <View style={[styles.row, styles.header]}>
+                <Cell
+                  style={styles.aisle}
+                  textStyle={[styles.headerText, styles.centerText]}
+                >
+                  Aisle
+                </Cell>
+                <Cell
+                  style={styles.tray}
+                  textStyle={[styles.headerText, styles.centerText]}
+                >
+                  Tray
+                </Cell>
+                <Cell
+                  style={styles.partName}
+                  textStyle={[styles.headerText, styles.leftText]}
+                >
+                  Part Name
+                </Cell>
+                <Cell
+                  style={styles.partDesc}
+                  textStyle={[styles.headerText, styles.leftText]}
+                >
+                  Description
+                </Cell>
+                <Cell
+                  style={styles.operation}
+                  textStyle={[styles.headerText, styles.leftText]}
+                >
+                  Operation
+                </Cell>
+                <Cell
+                  style={styles.qty}
+                  textStyle={[styles.headerText, styles.centerText]}
+                >
+                  Qty
+                </Cell>
+                <Cell
+                  style={styles.status}
+                  textStyle={[styles.headerText, styles.centerText]}
+                >
+                  Status
+                </Cell>
+              </View>
+            )}
+            contentContainerStyle={{ flexGrow: 1 }}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
-
 
 const styles = ScaledSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: "10@s" },
@@ -256,7 +265,6 @@ const styles = ScaledSheet.create({
     backgroundColor: "#333",
   },
 
-  // cell container: used for every column (header + rows)
   cellContainer: {
     paddingVertical: "8@vs",
     paddingHorizontal: "6@s",
@@ -266,7 +274,6 @@ const styles = ScaledSheet.create({
     borderColor: "#e0e0e0",
   },
 
-  // text inside cells
   cellText: {
     fontSize: "16@ms",
     color: "#000",
@@ -278,15 +285,12 @@ const styles = ScaledSheet.create({
     textAlign: "left",
   },
 
-  // text alignment helpers
   leftText: { textAlign: "left" as const },
   centerText: { textAlign: "center" as const },
 
-  // IMPORTANT: fixed widths (scaled)
-  tray: { width: "50@s" }, // small numeric
-  rowCol: { width: "50@s" },
-  partName: { width: "180@s" }, // allows more room but fixed
-  partCode: { width: "120@s" },
+  aisle: { width: "70@s" },
+  tray: { width: "70@s" },
+  partName: { width: "180@s" },
   partDesc: { width: "220@s" },
   operation: { width: "120@s" },
   qty: { width: "70@s" },
@@ -296,18 +300,17 @@ const styles = ScaledSheet.create({
   odd: { backgroundColor: "#fff" },
 
   resetButton: {
-  backgroundColor: "#ff3b30",
-  paddingVertical: "10@vs",
-  paddingHorizontal: "16@s",
-  borderRadius: "8@ms",
-  alignSelf: "stretch",
-  marginBottom: "10@vs",
-  alignItems: "center",
-},
-resetButtonText: {
-  color: "#fff",
-  fontWeight: "600",
-  fontSize: "15@ms",
-},
-
+    backgroundColor: "#ff3b30",
+    paddingVertical: "10@vs",
+    paddingHorizontal: "16@s",
+    borderRadius: "8@ms",
+    alignSelf: "stretch",
+    marginBottom: "10@vs",
+    alignItems: "center",
+  },
+  resetButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: "15@ms",
+  },
 });
