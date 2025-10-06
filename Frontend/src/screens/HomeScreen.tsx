@@ -38,7 +38,7 @@ export default function HomeScreen({ navigation }: any) {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `http://192.168.63.31:5000/oper_table/${otp}`,
+          `http://192.168.1.5:5000/oper_table/${otp}`,
           { headers: { "Cache-Control": "no-cache" } }
         );
         const json = await res.json();
@@ -63,7 +63,7 @@ export default function HomeScreen({ navigation }: any) {
       )
     );
     try {
-      await fetch(`http://192.168.63.31:5000/oper_table/${sr_no}/status`, {
+      await fetch(`http://192.168.1.5:5000/oper_table/${sr_no}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status_val: newStatus }),
@@ -81,10 +81,11 @@ export default function HomeScreen({ navigation }: any) {
     );
   }
 
+  // ✅ FIX: Filter using number comparison
   const filteredData =
     selectedAisle === "All"
       ? data
-      : data.filter((item) => item.aisle_no.toString() === selectedAisle);
+      : data.filter((item) => item.aisle_no === Number(selectedAisle));
 
   // Helper cell component
   const Cell = ({ style, children, textStyle, lines = 1 }: any) => (
@@ -146,7 +147,7 @@ export default function HomeScreen({ navigation }: any) {
         style={styles.scanButton}
         onPress={() =>
           navigation.navigate("QRScanner", {
-            onScan: (aisleNo: string) => setSelectedAisle(aisleNo),
+            onScan: (aisleNo: string) => setSelectedAisle(aisleNo.trim()), // ✅ Trim
           })
         }
       >
@@ -169,7 +170,7 @@ export default function HomeScreen({ navigation }: any) {
 
       {/* Scrollable Table */}
       <ScrollView horizontal showsHorizontalScrollIndicator>
-        <View>
+        <View style={{ minWidth: 800 }}> {/* ✅ Ensure FlatList has width */}
           <FlatList
             data={filteredData}
             keyExtractor={(item) => item.sr_no.toString()}

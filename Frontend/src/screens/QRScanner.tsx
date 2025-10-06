@@ -20,7 +20,6 @@ export default function QRScanner({ navigation, route }: any) {
   const [scanned, setScanned] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
 
-  // vision-camera hooks
   const { hasPermission, requestPermission } = useCameraPermission();
   const devices = useCameraDevices();
 
@@ -42,7 +41,7 @@ export default function QRScanner({ navigation, route }: any) {
       const first = codes[0] as any;
       const value = first?.value ?? first?.rawValue ?? first?.data ?? null;
       if (value && value !== scanned) {
-        setScanned(String(value));
+        setScanned(String(value).trim()); // Trim spaces here
       }
     },
   });
@@ -51,20 +50,14 @@ export default function QRScanner({ navigation, route }: any) {
     if (!scanned) return;
     setConfirmed(true);
 
-    // Preferred callback
     const cb = route?.params?.onScan;
     if (typeof cb === "function") {
-      try {
-        cb(scanned); // send aisle number back
-      } catch (e) {
-        console.warn("onScan callback error:", e);
-      }
+      cb(scanned.trim()); // send trimmed aisle number back
       navigation.goBack();
       return;
     }
 
-    // Fallback
-    navigation.navigate("Home", { scannedAisle: scanned });
+    navigation.navigate("Home", { scannedAisle: scanned.trim() });
   }, [scanned, route, navigation]);
 
   const onScanAgain = () => {
@@ -100,7 +93,6 @@ export default function QRScanner({ navigation, route }: any) {
         codeScanner={codeScanner}
       />
 
-      {/* Footer overlay */}
       <View style={styles.footer}>
         <Text style={styles.text}>Scanning QR Code...</Text>
 
@@ -131,7 +123,6 @@ export default function QRScanner({ navigation, route }: any) {
 const styles = ScaledSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-
   footer: {
     position: "absolute",
     bottom: "28@vs",
@@ -143,52 +134,12 @@ const styles = ScaledSheet.create({
     height: "150@vs",
     justifyContent: "center",
   },
-
   text: { fontSize: "24@s", color: "#010000ff" },
-  value: {
-    fontSize: "24@ms",
-    marginTop: "6@vs",
-    color: "#000000ff",
-    fontWeight: "400",
-  },
-
-  actionsRow: {
-    flexDirection: "row",
-    marginTop: "10@vs",
-    justifyContent: "center",
-    gap: "8@s",
-    padding: "10@s",
-  },
-
-  useBtn: {
-    paddingVertical: "8@vs",
-    paddingHorizontal: "12@s",
-    backgroundColor: "#10a52eff",
-    borderRadius: "8@ms",
-    marginRight: "8@ms",
-    height: "50@vs",
-    width: "130@vs",
-  },
+  value: { fontSize: "24@ms", marginTop: "6@vs", color: "#000", fontWeight: "400" },
+  actionsRow: { flexDirection: "row", marginTop: "10@vs", justifyContent: "center", gap: "8@s", padding: "10@s" },
+  useBtn: { paddingVertical: "8@vs", paddingHorizontal: "12@s", backgroundColor: "#10a52eff", borderRadius: "8@ms", marginRight: "8@ms", height: "50@vs", width: "130@vs" },
   useBtnText: { color: "#fff", fontWeight: "500", fontSize: "16.5@ms" },
-
-  scanAgainText: {
-    color: "#000000ff",
-    fontWeight: "600",
-    fontSize: "16@ms",
-  },
-
-  scanAgainBtn: {
-    paddingVertical: "8@vs",
-    paddingHorizontal: "12@s",
-    backgroundColor: "#eee",
-    borderRadius: "8@ms",
-    height: "50@vs",
-    width: "130@vs",
-  },
-
-  btn: {
-    padding: "12@s",
-    backgroundColor: "#eee",
-    borderRadius: "8@ms",
-  },
+  scanAgainText: { color: "#000", fontWeight: "600", fontSize: "16@ms" },
+  scanAgainBtn: { paddingVertical: "8@vs", paddingHorizontal: "12@s", backgroundColor: "#eee", borderRadius: "8@ms", height: "50@vs", width: "130@vs" },
+  btn: { padding: "12@s", backgroundColor: "#eee", borderRadius: "8@ms" },
 });

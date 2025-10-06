@@ -15,8 +15,7 @@ type Props = {
 };
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  // state name also changed to otp_val for clarity
-  const [otp_val, setOtpVal] = useState(""); 
+  const [otp_val, setOtpVal] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -30,23 +29,38 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     setErrorMsg("");
 
     try {
-      const response = await fetch("http://192.168.63.31:5000/validate-otp", {
+      console.log("Sending OTP request to server with value:", otp_val);
+
+      const response = await fetch("http://192.168.1.5:5000/validate-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otp_val }), // use otp_val key
+        body: JSON.stringify({ otp_val }),
       });
 
-      const data = await response.json();
+      console.log("Response status:", response.status);
+
+      // Get raw response text first for debugging
+      const rawText = await response.text();
+      console.log("Raw response text:", rawText);
+
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (e) {
+        console.log("Error parsing JSON:", e);
+        setErrorMsg("Invalid server response: " + rawText);
+        return;
+      }
 
       if (data.success) {
         Alert.alert("Success", "OTP is valid 🎉");
-        navigation.navigate("Home", { otp: otp_val }); // send otp_val
+        navigation.navigate("Home", { otp: otp_val });
       } else {
         setErrorMsg("Invalid OTP. Please try again.");
       }
-    } catch (error) {
-      console.error(error);
-      setErrorMsg("Error connecting to server.");
+    } catch (error: any) {
+      console.error("Fetch error:", error);
+      setErrorMsg("Error connecting to server: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -75,8 +89,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           style={styles.input}
           placeholder="Enter OTP"
-          value={otp_val} // bind to otp_val
-          onChangeText={setOtpVal} // bind setter
+          value={otp_val}
+          onChangeText={setOtpVal}
           keyboardType="numeric"
         />
 
